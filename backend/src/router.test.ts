@@ -7,12 +7,20 @@ const record: FulfillmentRecord = {
   profileName: 'request-coordinator',
   condition: 'available-stock-capability',
   environment: 'dev',
-  resource: {
-    kind: 'CiliumNetworkPolicy',
-    provider: 'kubernetes',
-    reference: 'rc-cilium/applications/request-coordinator-egress',
-    componentRef: 'component:default/request-coordinator',
-  },
+  resources: [
+    {
+      kind: 'CiliumNetworkPolicy',
+      provider: 'kubernetes',
+      reference: 'rc-cilium/applications/request-coordinator-egress',
+      componentRef: 'component:default/request-coordinator',
+    },
+    {
+      kind: 'Certificate',
+      provider: 'kubernetes',
+      reference: 'rc-cilium/applications/request-coordinator-mtls',
+      componentRef: 'component:default/request-coordinator',
+    },
+  ],
   automation: { tool: 'kratix', reference: 'runtime-conditions-profile' },
 };
 

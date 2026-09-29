@@ -15,6 +15,6 @@ export interface FulfillmentRecord {
   profileNamespace?: string;
   condition: string;
   environment: string;
-  resource: FulfillingResource;
+  resources: FulfillingResource[];
   automation?: FulfillingAutomation;
 }

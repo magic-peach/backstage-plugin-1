@@ -1,10 +1,12 @@
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { discoveryApiRef, fetchApiRef, useApi } from '@backstage/core-plugin-api';
 import { kubernetesApiRef } from '@backstage/plugin-kubernetes-react';
+import { parseEntityRef } from '@backstage/catalog-model';
 import useAsync from 'react-use/esm/useAsync';
 import {
   InfoCard,
   Table,
+  Link,
   Progress,
   ResponseErrorPanel,
 } from '@backstage/core-components';
@@ -18,6 +20,25 @@ interface ConditionRow {
   optional: string;
   fulfillmentCount: string;
   fulfillments: FulfillmentRecord[];
+}
+
+interface ResourceRow {
+  environment: string;
+  kind: string;
+  provider: string;
+  reference: string;
+  kubernetesLink?: string;
+  automation: string;
+}
+
+function kubernetesEntityLink(componentRef?: string): string | undefined {
+  if (!componentRef) return undefined;
+  try {
+    const { kind, namespace, name } = parseEntityRef(componentRef);
+    return `/catalog/${namespace}/${kind}/${name}/kubernetes`;
+  } catch {
+    return undefined;
+  }
 }
 
 const ProfileCard = ({
@@ -54,7 +75,16 @@ const ProfileCard = ({
       title={`Runtime Conditions: ${profile.metadata.name}`}
       subheader={`${profile.workload.uri} on ${cluster}`}
     >
-      <p>Extensions: {profile.extensions.join(', ')}</p>
+      <p>Extensions:</p>
+      <ul>
+        {profile.extensions.map(extension => (
+          <li key={extension}>
+            <a href={extension} target="_blank" rel="noreferrer">
+              {extension}
+            </a>
+          </li>
+        ))}
+      </ul>
       <Table
         options={{ paging: false, search: false }}
         columns={[
@@ -65,21 +95,45 @@ const ProfileCard = ({
           { title: 'Fulfilled in', field: 'fulfillmentCount' },
         ]}
         data={data}
-        detailPanel={({ rowData: { fulfillments: rowFulfillments } }: { rowData: ConditionRow }) =>
-          rowFulfillments.length === 0 ? (
-            <p style={{ margin: 16 }}>No fulfillments reported for this condition.</p>
-          ) : (
-            <ul style={{ margin: 16 }}>
-              {rowFulfillments.map((f, i) => (
-                <li key={i}>
-                  <strong>{f.environment}</strong>: {f.resource.provider}/{f.resource.kind}:{' '}
-                  {f.resource.reference}
-                  {f.automation ? ` (via ${f.automation.tool})` : ''}
-                </li>
-              ))}
-            </ul>
-          )
-        }
+        detailPanel={({ rowData: { fulfillments: rowFulfillments } }: { rowData: ConditionRow }) => {
+          const resourceRows: ResourceRow[] = rowFulfillments.flatMap(f =>
+            f.resources.map(r => ({
+              environment: f.environment,
+              kind: r.kind,
+              provider: r.provider,
+              reference: r.reference,
+              kubernetesLink: r.provider === 'kubernetes' ? kubernetesEntityLink(r.componentRef) : undefined,
+              automation: f.automation ? f.automation.tool : '—',
+            })),
+          );
+          if (resourceRows.length === 0) {
+            return <p style={{ margin: 16 }}>No fulfillments reported for this condition.</p>;
+          }
+          return (
+            <div style={{ margin: 16 }}>
+              <Table
+                options={{ paging: false, search: false, toolbar: false }}
+                columns={[
+                  { title: 'Environment', field: 'environment' },
+                  { title: 'Kind', field: 'kind' },
+                  { title: 'Provider', field: 'provider' },
+                  {
+                    title: 'Reference',
+                    field: 'reference',
+                    render: (row: ResourceRow) =>
+                      row.kubernetesLink ? (
+                        <Link to={row.kubernetesLink}>{row.reference}</Link>
+                      ) : (
+                        row.reference
+                      ),
+                  },
+                  { title: 'Automation', field: 'automation' },
+                ]}
+                data={resourceRows}
+              />
+            </div>
+          );
+        }}
       />
     </InfoCard>
   );

@@ -1,16 +1,18 @@
 import type { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
 
+export interface FulfillingResource {
+  kind: string;
+  provider: string;
+  reference: string;
+  componentRef?: string;
+}
+
 export interface FulfillmentRecord {
   profileName: string;
   profileNamespace?: string;
   condition: string;
   environment: string;
-  resource: {
-    kind: string;
-    provider: string;
-    reference: string;
-    componentRef?: string;
-  };
+  resources: FulfillingResource[];
   automation?: { tool: string; reference?: string };
 }
 

@@ -73,26 +73,42 @@ POST /api/runtime-conditions/fulfillments
   "profileName": "request-coordinator",
   "condition": "available-stock-capability",
   "environment": "dev",
-  "resource": {
-    "kind": "CiliumNetworkPolicy",
-    "provider": "kubernetes",
-    "reference": "rc-cilium/applications/request-coordinator-egress",
-    "componentRef": "component:default/inventory-service"
-  },
+  "resources": [
+    {
+      "kind": "CiliumNetworkPolicy",
+      "provider": "kubernetes",
+      "reference": "rc-cilium/applications/request-coordinator-egress",
+      "componentRef": "component:default/inventory-service"
+    },
+    {
+      "kind": "Certificate",
+      "provider": "kubernetes",
+      "reference": "rc-cilium/applications/request-coordinator-mtls",
+      "componentRef": "component:default/inventory-service"
+    }
+  ],
   "automation": { "tool": "kratix", "reference": "runtime-conditions-profile" }
 }
 ```
 
-- `resource.reference` is whatever uniquely identifies the provisioned
-  resource in its environment, e.g. `cluster/namespace/kind/name` for
-  Kubernetes or an ARN for a cloud resource.
+- A condition is often fulfilled by more than one resource, e.g. a
+  `CiliumNetworkPolicy` plus a cert-manager `Certificate` for an API
+  condition, or a database plus a `CiliumNetworkPolicy` plus a `Secret` for a
+  datastore condition, so `resources` is always an array, never a single
+  object.
+- Each resource's `reference` is whatever uniquely identifies it in its
+  environment, e.g. `cluster/namespace/kind/name` for Kubernetes or an ARN
+  for a cloud resource.
 - `resource.provider` and `automation.tool` are free-form strings, not an
   enum, since the set of platforms and automation tools isn't fixed.
-- `resource.componentRef` and `automation` are optional.
+- `resource.componentRef` and `automation` are optional. When a resource's
+  `provider` is `"kubernetes"` and it carries a `componentRef`, the frontend
+  links its reference to that component's Kubernetes tab in the Kubernetes
+  Backstage plugin.
 
 The frontend reads `GET /api/runtime-conditions/fulfillments?profileName=...`.
 A single condition can be fulfilled in more than one environment (dev, prod,
 federal), each independently, so the conditions table shows how many
 environments have reported a fulfillment for that condition; expanding a row
-lists each one's environment, resource, and automation. A condition with no
-reported fulfillment shows none, it is never inferred.
+shows a table of every environment, resource, and automation tool involved.
+A condition with no reported fulfillment shows none, it is never inferred.

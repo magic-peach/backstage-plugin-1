@@ -6,9 +6,8 @@ function isValid(record: Partial<FulfillmentRecord>): record is FulfillmentRecor
     record.profileName &&
       record.condition &&
       record.environment &&
-      record.resource?.kind &&
-      record.resource?.provider &&
-      record.resource?.reference,
+      record.resources?.length &&
+      record.resources.every(r => r.kind && r.provider && r.reference),
   );
 }
 
@@ -23,7 +22,7 @@ export function createRouter(): Router {
     if (!isValid(record)) {
       res.status(400).json({
         error:
-          'profileName, condition, environment, and resource.kind/provider/reference are required',
+          'profileName, condition, environment, and a non-empty resources array (each with kind/provider/reference) are required',
       });
       return;
     }
