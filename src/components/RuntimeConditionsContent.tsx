@@ -9,7 +9,16 @@ import {
   ResponseErrorPanel,
 } from '@backstage/core-components';
 import { deploymentsForEntity, fetchAllProfiles, RuntimeConditionsProfile } from '../profiles';
-import { fetchFulfillments } from '../fulfillments';
+import { fetchFulfillments, FulfillmentRecord } from '../fulfillments';
+
+interface ConditionRow {
+  name?: string;
+  kind: string;
+  interfaceType: string;
+  optional: string;
+  fulfillmentCount: string;
+  fulfillments: FulfillmentRecord[];
+}
 
 const ProfileCard = ({
   cluster,
@@ -25,6 +34,21 @@ const ProfileCard = ({
     [profile.metadata.name],
   );
 
+  const data: ConditionRow[] = profile.conditions.map(condition => {
+    const conditionFulfillments = fulfillments?.filter(f => f.condition === condition.name) ?? [];
+    return {
+      name: condition.name,
+      kind: condition.kind,
+      interfaceType: condition.interface.type,
+      optional: condition.optional ? 'yes' : 'no',
+      fulfillmentCount:
+        conditionFulfillments.length === 0
+          ? 'none'
+          : `${conditionFulfillments.length} environment${conditionFulfillments.length === 1 ? '' : 's'}`,
+      fulfillments: conditionFulfillments,
+    };
+  });
+
   return (
     <InfoCard
       title={`Runtime Conditions: ${profile.metadata.name}`}
@@ -38,20 +62,24 @@ const ProfileCard = ({
           { title: 'Kind', field: 'kind' },
           { title: 'Interface', field: 'interfaceType' },
           { title: 'Optional', field: 'optional' },
-          { title: 'Fulfilled by', field: 'fulfilledBy' },
+          { title: 'Fulfilled in', field: 'fulfillmentCount' },
         ]}
-        data={profile.conditions.map(condition => {
-          const fulfillment = fulfillments?.find(f => f.condition === condition.name);
-          return {
-            name: condition.name,
-            kind: condition.kind,
-            interfaceType: condition.interface.type,
-            optional: condition.optional ? 'yes' : 'no',
-            fulfilledBy: fulfillment
-              ? `${fulfillment.resource.provider}/${fulfillment.resource.kind}: ${fulfillment.resource.reference}`
-              : '—',
-          };
-        })}
+        data={data}
+        detailPanel={({ rowData: { fulfillments: rowFulfillments } }: { rowData: ConditionRow }) =>
+          rowFulfillments.length === 0 ? (
+            <p style={{ margin: 16 }}>No fulfillments reported for this condition.</p>
+          ) : (
+            <ul style={{ margin: 16 }}>
+              {rowFulfillments.map((f, i) => (
+                <li key={i}>
+                  <strong>{f.environment}</strong>: {f.resource.provider}/{f.resource.kind}:{' '}
+                  {f.resource.reference}
+                  {f.automation ? ` (via ${f.automation.tool})` : ''}
+                </li>
+              ))}
+            </ul>
+          )
+        }
       />
     </InfoCard>
   );

@@ -90,6 +90,9 @@ POST /api/runtime-conditions/fulfillments
   enum, since the set of platforms and automation tools isn't fixed.
 - `resource.componentRef` and `automation` are optional.
 
-The frontend reads `GET /api/runtime-conditions/fulfillments?profileName=...`
-and shows the matching resource next to each condition it fulfills. A
-condition with no matching fulfillment shows none, it is never inferred.
+The frontend reads `GET /api/runtime-conditions/fulfillments?profileName=...`.
+A single condition can be fulfilled in more than one environment (dev, prod,
+federal), each independently, so the conditions table shows how many
+environments have reported a fulfillment for that condition; expanding a row
+lists each one's environment, resource, and automation. A condition with no
+reported fulfillment shows none, it is never inferred.
