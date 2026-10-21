@@ -31,6 +31,15 @@ interface ResourceRow {
   automation: string;
 }
 
+function extensionSourceLink(extension: string): string {
+  const m = extension.match(
+    /^https:\/\/runtimeconditions\.io\/extensions\/([^/]+)\/([^/]+)\/runtimeconditions\.extension\.yaml$/,
+  );
+  return m
+    ? `https://github.com/runtimeconditions/extensions/blob/main/catalog/rc/${m[1]}/${m[1]}-${m[2]}.yaml`
+    : extension;
+}
+
 function kubernetesEntityLink(componentRef?: string): string | undefined {
   if (!componentRef) return undefined;
   try {
@@ -78,7 +87,7 @@ const ProfileCard = ({
       <ul>
         {profile.extensions.map(extension => (
           <li key={extension}>
-            <a href={extension} target="_blank" rel="noreferrer">
+            <a href={extensionSourceLink(extension)} target="_blank" rel="noreferrer">
               {extension}
             </a>
           </li>
